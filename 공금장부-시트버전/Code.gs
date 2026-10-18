@@ -1,10 +1,10 @@
 // 공금 장부: 구글 시트(내역·설정)에 저장하고, 영수증 사진은 드라이브 폴더에 보관한다.
-const ITEM_HEAD = ['id', '날짜', '목적', '결제한 사람', '금액', '영수증', '수정시각'];
-const FOLDER_NAME = '공금장부 영수증';
+const ITEM_HEAD = ['id', '날짜', '목적', '결제한 사람', '금액', '영수증'];
+const FOLDER_NAME = '예산사용내역';
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('공금 장부')
+    .setTitle('예산사용내역')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
