@@ -1,0 +1,20 @@
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Secrets and credentials
+.env
+.env.*
+.clasprc.json
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Dependencies and logs
+node_modules/
+*.log

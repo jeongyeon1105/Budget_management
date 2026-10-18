@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme:light dark;
+    --bg:#f2f5f4; --surface:#fff; --fg:#1b2422; --muted:#5a6a66; --line:#dbe3e0;
+    --accent:#0f6b5c; --accent-fg:#fff; --soft:#e5efec; --warn:#b3261e;
+    --sans:"IBM Plex Sans KR","Malgun Gothic",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#111817; --surface:#19221f; --fg:#e5eeeb; --muted:#93a39e; --line:#2a3733;
+      --accent:#4cc2a8; --accent-fg:#08201a; --soft:#1f2f2a; --warn:#ff8a80;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;
+    padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+  main{max-width:860px;margin:0 auto;display:grid;gap:16px}
+  h1{font-size:22px;margin:0}
+  h2{font-size:16px;margin:0 0 12px}
+  section{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .figures{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin:0}
+  .figures dt{font-size:12px;letter-spacing:.04em;color:var(--muted)}
+  .figures dd{margin:2px 0 0;font-family:var(--mono);font-size:22px;font-variant-numeric:tabular-nums}
+  #left.over{color:var(--warn)}
+  .bar{height:8px;background:var(--soft);border-radius:4px;margin:14px 0;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);width:0}
+  .bar.over i{background:var(--warn)}
+  form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+  label{display:grid;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+  input{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0;width:100%}
+  input[type=file]{padding:6px;font-size:13px}
+  input[type=checkbox]{width:auto}
+  .check{display:flex;align-items:center;gap:8px;grid-column:1/-1}
+  button{font:inherit;border-radius:6px;padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+  button.danger{color:var(--warn)}
+  button:disabled{opacity:.5;cursor:default}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:end;grid-column:1/-1}
+  .msg{min-height:1.5em;margin:8px 0 0;font-size:13px;color:var(--warn)}
+  .scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+  th{font-size:12px;font-weight:500;letter-spacing:.04em;color:var(--muted)}
+  td.purpose{min-width:140px}
+  .empty{padding:24px 8px;color:var(--muted);text-align:center}
+  dialog{border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);padding:12px;max-width:min(92vw,720px)}
+  dialog img{display:block;max-width:100%;max-height:75vh;margin:0 auto 12px}
+  dialog form{display:block;text-align:center}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>공금 장부</h1>
+
+  <section id="gate" hidden>
+    <h2>접속 코드</h2>
+    <form id="gateform">
+      <label for="code">동아리에서 받은 코드를 입력하세요<input id="code" type="password" autocomplete="off" required></label>
+      <div class="actions"><button class="primary">들어가기</button></div>
+    </form>
+    <p class="msg" id="gatemsg" role="status"></p>
+  </section>
+
+  <div id="app" hidden style="display:contents">
+    <section aria-label="잔액">
+      <dl class="figures">
+        <div><dt>총 예산</dt><dd id="total">0원</dd></div>
+        <div><dt>사용 금액</dt><dd id="spent">0원</dd></div>
+        <div><dt>잔액</dt><dd id="left">0원</dd></div>
+      </dl>
+      <div class="bar" id="bar"><i id="barfill"></i></div>
+      <label for="budget">총 예산 (원)
+        <input id="budget" type="number" inputmode="numeric" min="0" step="1" placeholder="예: 1000000">
+      </label>
+    </section>
+
+    <section id="formsec">
+      <h2 id="formtitle">사용 내역 추가</h2>
+      <form id="f">
+        <label for="date">날짜<input id="date" name="date" type="date" required></label>
+        <label for="purpose">목적<input id="purpose" name="purpose" maxlength="200" required></label>
+        <label for="payer">결제한 사람<input id="payer" name="payer" maxlength="100" required></label>
+        <label for="amount">금액 (원)<input id="amount" name="amount" type="number" inputmode="numeric" min="1" step="1" required></label>
+        <label for="receipt">영수증 (사진)<input id="receipt" name="receipt" type="file" accept="image/*"></label>
+        <label class="check" id="rmlabel" for="rmreceipt" hidden><input id="rmreceipt" type="checkbox"> 기존 영수증 삭제</label>
+        <div class="actions">
+          <button class="primary" id="save">추가</button>
+          <button type="button" id="cancel" hidden>취소</button>
+          <button type="button" class="danger" id="del" hidden>삭제</button>
+        </div>
+      </form>
+      <p class="msg" id="msg" role="status"></p>
+    </section>
+
+    <section>
+      <h2>사용 내역</h2>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>날짜</th><th>목적</th><th>결제자</th><th class="num">금액</th><th>영수증</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="empty">불러오는 중…</p>
+    </section>
+  </div>
+</main>
+
+<dialog id="viewer">
+  <img id="vimg" alt="영수증">
+  <form method="dialog"><button>닫기</button></form>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+const won = n => Number(n).toLocaleString('ko-KR') + '원';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const call = (fn, ...args) => new Promise((ok, no) => google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn](...args));
+const errText = e => String((e && e.message) || e).replace(/^(Error|Exception):\s*/, '');
+const remember = {
+  get: () => { try { return localStorage.getItem('gg-code') || ''; } catch (e) { return ''; } },
+  set: v => { try { localStorage.setItem('gg-code', v); } catch (e) { /* 저장이 막힌 환경이면 매번 입력 */ } }
+};
+
+let code = remember.get(), items = null, total = 0, editing = null, armedDelete = false, busy = false;
+
+function say(text) { $('msg').textContent = text || ''; }
+
+function apply(res) {
+  total = res.total;
+  items = res.items.slice().sort((a, b) => b.date.localeCompare(a.date));
+  render();
+}
+
+function render() {
+  const list = items || [];
+  const spent = list.reduce((s, i) => s + i.amount, 0);
+  const left = total - spent;
+  $('total').textContent = won(total);
+  $('spent').textContent = won(spent);
+  $('left').textContent = won(left);
+  $('left').className = left < 0 ? 'over' : '';
+  $('bar').className = 'bar' + (left < 0 ? ' over' : '');
+  $('barfill').style.width = (total > 0 ? Math.min(100, spent / total * 100) : 0) + '%';
+  if (document.activeElement !== $('budget')) $('budget').value = total || '';
+  $('rows').innerHTML = list.map(i => `
+    <tr>
+      <td class="num">${esc(i.date)}</td>
+      <td class="purpose">${esc(i.purpose)}</td>
+      <td>${esc(i.payer)}</td>
+      <td class="num">${won(i.amount)}</td>
+      <td>${i.receipt ? `<button data-rid="${esc(i.receipt)}">보기</button>` : '–'}</td>
+      <td><button data-id="${esc(i.id)}">수정</button></td>
+    </tr>`).join('');
+  $('empty').hidden = list.length > 0;
+  $('empty').textContent = items === null ? '불러오는 중…' : '아직 사용 내역이 없습니다. 위에서 총 예산을 적고 첫 내역을 추가하세요.';
+}
+
+function showGate(msg) {
+  $('app').hidden = true; $('gate').hidden = false;
+  $('gatemsg').textContent = msg || '';
+}
+
+async function load() {
+  try {
+    apply(await call('getData', code));
+    $('gate').hidden = true; $('app').hidden = false;
+    return true;
+  } catch (e) {
+    if (errText(e).includes('BAD_CODE')) showGate(code ? '코드가 맞지 않습니다.' : '');
+    else if (!$('app').hidden) say('불러오지 못했습니다: ' + errText(e));
+    else showGate('불러오지 못했습니다: ' + errText(e));
+    return false;
+  }
+}
+
+// 서버 호출 후 최신 데이터로 갱신. 실패하면 메시지를 보여 주고 false.
+async function mutate(fn, ...args) {
+  busy = true; $('save').disabled = true; say('');
+  try { apply(await call(fn, code, ...args)); return true; }
+  catch (e) { say(errText(e).includes('BAD_CODE') ? '코드가 바뀌었습니다. 새로고침해서 다시 입력해 주세요.' : '저장하지 못했습니다: ' + errText(e)); return false; }
+  finally { busy = false; $('save').disabled = false; }
+}
+
+function resetForm() {
+  editing = null; armedDelete = false;
+  $('f').reset();
+  $('date').value = today();
+  $('formtitle').textContent = '사용 내역 추가';
+  $('save').textContent = '추가';
+  $('cancel').hidden = $('del').hidden = $('rmlabel').hidden = true;
+  $('del').textContent = '삭제';
+}
+
+// 휴대폰 사진은 수 MB라서 긴 변 1200px JPEG로 줄여 보낸다
+function shrink(file) {
+  return new Promise((ok, no) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, 1200 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      ok(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => no(new Error('이미지를 읽을 수 없습니다. 사진 파일을 선택해 주세요.'));
+    img.src = url;
+  });
+}
+
+$('gateform').onsubmit = async e => {
+  e.preventDefault();
+  code = $('code').value;
+  if (await load()) remember.set(code);
+};
+
+$('budget').onchange = async e => {
+  const v = Math.max(0, Math.floor(Number(e.target.value) || 0));
+  if (v !== total) await mutate('saveBudget', v);
+};
+
+$('f').onsubmit = async e => {
+  e.preventDefault();
+  if (busy) return;
+  let image = null;
+  const file = $('receipt').files[0];
+  if (file) { try { image = await shrink(file); } catch (err) { return say(errText(err)); } }
+  const item = {
+    id: editing ? editing.id : '', date: $('date').value, purpose: $('purpose').value,
+    payer: $('payer').value, amount: $('amount').value
+  };
+  if (await mutate('saveItem', item, image, $('rmreceipt').checked)) resetForm();
+};
+
+$('rows').onclick = async e => {
+  const rid = e.target.dataset.rid;
+  if (rid) {
+    e.target.disabled = true;
+    try { $('vimg').src = await call('getReceipt', code, rid); $('viewer').showModal(); }
+    catch (err) { say('영수증을 열지 못했습니다: ' + errText(err)); }
+    e.target.disabled = false;
+    return;
+  }
+  const it = e.target.dataset.id && items.find(i => i.id === e.target.dataset.id);
+  if (!it) return;
+  editing = it; armedDelete = false;
+  $('date').value = it.date; $('purpose').value = it.purpose; $('payer').value = it.payer; $('amount').value = it.amount;
+  $('receipt').value = ''; $('rmreceipt').checked = false;
+  $('formtitle').textContent = '사용 내역 수정';
+  $('save').textContent = '저장';
+  $('cancel').hidden = $('del').hidden = false;
+  $('rmlabel').hidden = !it.receipt;
+  $('del').textContent = '삭제';
+  say(it.receipt ? '새 영수증을 고르면 교체되고, 체크하면 영수증만 지워집니다.' : '');
+  $('formsec').scrollIntoView({behavior: 'smooth', block: 'start'});
+};
+
+$('cancel').onclick = () => { resetForm(); say(''); };
+
+// 두 번 눌러야 삭제되게 해서 실수를 막는다
+$('del').onclick = async () => {
+  if (!armedDelete) { armedDelete = true; $('del').textContent = '한 번 더 누르면 삭제됩니다'; return; }
+  if (await mutate('deleteItem', editing.id)) resetForm();
+};
+
+// 다른 사람이 입력한 내역을 반영: 탭으로 돌아올 때와 1분마다
+const refresh = () => { if (!busy && !editing && !$('app').hidden && document.visibilityState === 'visible') load(); };
+document.addEventListener('visibilitychange', refresh);
+setInterval(refresh, 60000);
+
+resetForm();
+load();
+</script>
+</body>
+</html>
